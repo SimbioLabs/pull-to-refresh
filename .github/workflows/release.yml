@@ -48,7 +48,25 @@ jobs:
       - name: License check
         run: npm run licenses
 
+      # Provenance is publishConfig.provenance only (package.json). npm 10.9
+      # treats --provenance and that field as the same switch, so the flag is
+      # omitted. A TLOG_CREATE_ENTRY_ERROR 409 is Rekor saying this process
+      # already wrote the entry and then retried it (npm/cli#10078). The
+      # registry PUT has not run. A new process signs with a new key.
       - name: Publish
-        run: npm publish --provenance --access public
+        run: |
+          log="${RUNNER_TEMP}/npm-publish.log"
+          for attempt in 1 2 3; do
+            if npm publish --access public >"$log" 2>&1; then
+              cat "$log"
+              exit 0
+            fi
+            cat "$log" >&2
+            if [ "$attempt" -eq 3 ] || ! grep -q 'TLOG_CREATE_ENTRY_ERROR' "$log"; then
+              exit 1
+            fi
+            echo "Transparency log conflict on attempt ${attempt}/3; retrying with a new signing key." >&2
+            sleep $((attempt * 10))
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
