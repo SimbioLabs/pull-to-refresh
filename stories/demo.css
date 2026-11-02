@@ -1,0 +1,43 @@
+.demo-frame {
+  width: 390px;
+  height: 720px;
+  max-height: 720px;
+  margin: 0 auto;
+  background: #f4f5f7;
+  color: #1c1f24;
+  border-radius: 1.25rem;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.16);
+  overflow: hidden;
+}
+
+.demo-bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  height: 4rem;
+  padding: 0 1rem;
+  background: #fff;
+  border-bottom: 1px solid #e2e5ea;
+  font-weight: 600;
+}
+
+.demo-body {
+  padding: calc(4rem + 1.25rem) 1.25rem calc(3.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.demo-note {
+  margin: 0 0 1rem;
+  color: #4b5563;
+}
+
+.demo-row {
+  margin: 0 0 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e6e8ec;
+  border-radius: 0.75rem;
+  background: #fff;
+}
