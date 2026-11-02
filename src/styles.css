@@ -1,0 +1,192 @@
+/*
+ * Scroll-container pull-to-refresh.
+ *
+ * The indicator is centered with a constant translateX(-50%). Do not switch
+ * that to the `translate` property: WebKit drops `translate` when `transform`
+ * is `none`, and the left edge sticks at 50%.
+ *
+ * The content offset is `--ptr-pull`, written every frame. Do not transition
+ * `transform` (or a custom property it reads). WebKit snaps that transition.
+ *
+ * Shell height is 100dvh. 100lvh is taller than Safari's visible viewport:
+ * the first line slides under a fixed bar, and the end of the scrollport
+ * sits behind the toolbar.
+ */
+
+.pull-to-refresh-root {
+  position: relative;
+  min-height: 0;
+  overflow-x: clip;
+  overflow-y: auto;
+  overflow-anchor: none;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-top: var(--ptr-header-offset, 0px);
+  scroll-padding-bottom: env(safe-area-inset-bottom, 0px);
+  color: var(--ptr-color, CanvasText);
+}
+
+.pull-to-refresh-root:focus {
+  outline: none;
+}
+
+.pull-to-refresh-root:focus-visible {
+  outline: 2px solid var(--ptr-focus, color-mix(in srgb, currentColor 55%, transparent));
+  outline-offset: -2px;
+}
+
+.pull-to-refresh-content {
+  position: relative;
+  overflow-anchor: none;
+  transform: translate3d(0, var(--ptr-pull, 0px), 0);
+  transition: none;
+}
+
+.pull-to-refresh-root[data-ptr-dragging="true"] .pull-to-refresh-content,
+.pull-to-refresh-root[data-ptr-settling="true"] .pull-to-refresh-content {
+  transition: none;
+}
+
+.pull-to-refresh-indicator {
+  pointer-events: none;
+  position: absolute;
+  top: calc(var(--ptr-header-offset, 0px) + 0.75rem);
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ptr-gap, 0.35rem);
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  margin: 0;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 160ms linear;
+}
+
+.pull-to-refresh-indicator.is-visible {
+  opacity: 1;
+}
+
+.pull-to-refresh-root[data-ptr-dragging="true"] .pull-to-refresh-indicator {
+  transition: none;
+}
+
+.pull-to-refresh-indicator.is-collapsing {
+  opacity: 0;
+}
+
+.pull-to-refresh-ring {
+  display: block;
+  box-sizing: border-box;
+  width: var(--ptr-size, 2.35rem);
+  height: var(--ptr-size, 2.35rem);
+  border-radius: 999px;
+  border: 2.5px solid var(--ptr-track, color-mix(in srgb, currentColor 28%, transparent));
+  border-top-color: var(--ptr-accent, currentColor);
+  background: transparent;
+  transform-origin: center;
+  transition: none;
+}
+
+.pull-to-refresh-indicator.is-armed .pull-to-refresh-ring {
+  border-top-color: var(--ptr-armed, currentColor);
+}
+
+.pull-to-refresh-indicator.is-spinning .pull-to-refresh-ring {
+  animation: ptr-spin 0.8s linear infinite;
+}
+
+.pull-to-refresh-copy {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 1.05rem;
+  height: 1.05rem;
+  width: max-content;
+  max-width: 100%;
+  font-family: inherit;
+  font-size: var(--ptr-label-size, 0.75rem);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.05rem;
+  text-align: center;
+  color: var(--ptr-label, color-mix(in srgb, currentColor 72%, transparent));
+}
+
+.pull-to-refresh-copy > span {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transition: opacity var(--ptr-label-fade-ms, 150ms) ease;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.pull-to-refresh-copy > span.is-active {
+  opacity: 1;
+}
+
+.pull-to-refresh-copy[data-tone="armed"] {
+  color: var(--ptr-label-armed, currentColor);
+}
+
+@keyframes ptr-spin {
+  from {
+    transform: rotate(var(--ptr-spin-start, 270deg));
+  }
+  to {
+    transform: rotate(calc(var(--ptr-spin-start, 270deg) + 360deg));
+  }
+}
+
+.ptr-scroll {
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ptr-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
+
+html:has(.ptr-shell),
+html:has(.ptr-shell) body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.ptr-shell > .pull-to-refresh-root,
+.ptr-shell > .ptr-scroll,
+.ptr-shell-fill > .pull-to-refresh-root,
+.ptr-shell-fill > .ptr-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ptr-shell-fill {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pull-to-refresh-indicator {
+    transition: opacity 80ms linear;
+  }
+
+  .pull-to-refresh-copy > span {
+    transition: opacity 80ms ease;
+  }
+
+  .pull-to-refresh-indicator.is-spinning .pull-to-refresh-ring {
+    animation: none;
+  }
+}
