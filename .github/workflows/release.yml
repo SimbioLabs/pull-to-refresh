@@ -1,9 +1,15 @@
 name: Release
 
 # Publishes to npm only when a version tag is pushed (v1.2.3).
-# Requires a repository secret named NPM_TOKEN (an npm automation token).
-# That secret is not stored in this repository.
-# Provenance needs a public GitHub repository and id-token: write.
+# Auth is npm Trusted Publishing (OIDC) for workflow file release.yml,
+# with no GitHub environment. No npm token is used.
+# Node 24 provides npm >= 11.5.1, which trusted publishing requires.
+# Trusted publishing generates provenance automatically.
+# publishConfig.provenance in package.json is that same switch, so the
+# CLI flag is not passed.
+# A TLOG_CREATE_ENTRY_ERROR 409 is Rekor saying this process already
+# wrote the entry and then retried it (npm/cli#10078). The registry PUT
+# has not run. A new process signs with a new key.
 
 on:
   push:
@@ -29,9 +35,24 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
           cache: npm
+
+      - name: Require npm trusted publishing
+        run: |
+          version="$(npm --version)"
+          echo "npm ${version}"
+          node -e '
+            const [major, minor, patch] = process.argv[1].split(".").map(Number);
+            const ok =
+              major > 11 ||
+              (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
+            if (!ok) {
+              console.error("trusted publishing needs npm >= 11.5.1, got " + process.argv[1]);
+              process.exit(1);
+            }
+          ' "$version"
 
       - name: Install
         run: npm ci
@@ -48,11 +69,6 @@ jobs:
       - name: License check
         run: npm run licenses
 
-      # Provenance is publishConfig.provenance only (package.json). npm 10.9
-      # treats --provenance and that field as the same switch, so the flag is
-      # omitted. A TLOG_CREATE_ENTRY_ERROR 409 is Rekor saying this process
-      # already wrote the entry and then retried it (npm/cli#10078). The
-      # registry PUT has not run. A new process signs with a new key.
       - name: Publish
         run: |
           log="${RUNNER_TEMP}/npm-publish.log"
@@ -68,5 +84,3 @@ jobs:
             echo "Transparency log conflict on attempt ${attempt}/3; retrying with a new signing key." >&2
             sleep $((attempt * 10))
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
