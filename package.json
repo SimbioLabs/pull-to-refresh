@@ -1,6 +1,6 @@
 {
   "name": "@simbiolabs/pull-to-refresh",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scroll-container pull-to-refresh for React. The bar stays put; only the content moves.",
   "type": "module",
   "sideEffects": [
